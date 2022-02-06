@@ -1,0 +1,106 @@
+数据集在Model里面，之前是在外部文件夹里面的  ，有人说没看见，所以现在将其放在这里的model文件夹里了。
+有些文件位置需要手动的改变一下。类似的导入数据包的位置也需要微调一下
+需要自己去建立数包，按照以下的格式去建立：
+
+1937760819,443,3232238097,42744,6,0,2,0,0,0,0,0,0,0,1,0,
+Source IP,Source Port,Destination IP,Destination Port,Protocol,Timestamp,Total Fwd Packets，Min Packet Length, Max Packet Length, Packet Length Mean, 
+FIN Flag, SYN Flag, RST Flag, PUSH Flag, ACK Flag, URG Flag
+
+Cnn_Identify_Model是主要的代码文件夹，
+
+        Cnn_Identify_Model/GUI是界面的代码
+
+	Cnn_Identify_Model/model是模型存放的位置
+
+	Cnn_Identify_Model/ModelStart/Modeltest是model的训练程序
+
+	Cnn_Identify_Model/ModelStart/DataPrehandler是数据的预处理程序
+
+	Cnn_Identify_Model/ModelStart/Start.py是识别程序
+
+	Cnn_Identify_Model/ModelStart/Config.py是识别程序的参数
+
+	Cnn_Identify_Model/ModelStart/DrawPicture是绘画图表的程序
+
+        Cnn_Identify_Model/RyuNetwork是sdn的启动程序文件夹
+
+	Cnn_Identify_Model/SnedAndHandlerPackets是文件的发送程序和数据的处理模块
+
+CreateNeedPackets是用于生成所需要的识别的数据包的程序文件夹
+
+代码过程中需要的文件夹 就是在运行过程中产生的数据
+***************************************************************************************************
+ryu   这个是一个用于sdn的集中式控制器，基于python
+对于ryu的改动部分：
+	ryu/manager.py中的第99行：
+		app_mgr.load_apps(app_lists,app_lists)
+	添加了app_lists参数
+
+	ryu/app_manager.py中的第419行
+	def load_apps(self, app_lists,relativepath=None):
+
+	第432行
+	cls = self.load_app(app_cls_name,relativepath=relativepath)
+
+	第405行
+	def load_app(self, name,relativepath=None):
+	# print(sys.path)
+        
+	if relativepath != None:
+            
+		self.parasepath(os.path.abspath(name),relativepath[0])
+	
+	第392行
+	#add project path to solve the problem that import error model
+    
+	def parasepath(self,abspath, relativpeath):
+        	
+		pragramepath = '/'
+        
+		absp = abspath.split('/')[1:-1]
+        
+		relativep = relativpeath.split('/')[:-1]
+        
+		for i in range(len(absp)):
+            
+		if absp[i] == relativep[0]:
+               
+			break
+            
+		pragramepath += absp[i] + "/"
+        
+		sys.path.append(pragramepath)
+        
+		# print(sys.path)
+
+有关问题及解决办法：
+1. ImportError: No module named '/root/Cnn_Identify_Model/RyuNetwork/StartNetwork'
+    找不到model
+    解决办法是：
+     import sys
+     sys.path.append("/root/Cnn_Identify_Model/RyuNetwork/StartNetwork")
+2.有时会出现打入数据包时出现问题，以下几个解决办法希望能解决：
+   1）StartGUI.py中的这段代码：
+     	class Sendpackets(Thread):
+	    def __init__(self):
+		super(Sendpackets, self).__init__()
+
+	    def run(self) -> None:
+	        # s1-eth1就是需要将数据流打入到那个接口中，如这个接口其实最终的数据回到交换机2中，具体的mininet代码在mininet.py中，所以在StartNetwork.py中的 
+		# def PacketInHandler(self,ev):中的判断语句会是这样if dp.id == 2:
+		Send(interface='s1-eth2',path= '/root/Cnn_Identify_Model/PacketingPacket.pcap')
+3.Exception in thread Thread-1:
+	Traceback (most recent call last):
+	  File "/usr/lib/python3.5/threading.py", line 914, in _bootstrap_inner
+	    self.run()
+	  File "/root/Cnn_Identify_Model/GUI/StartGUI.py", line 199, in run
+	    Send(interface='s1-eth1',path= '/root/Cnn_Identify_Model/PacketingPacket.pcap')
+	  File "/root/Cnn_Identify_Model/SnedAndHandlePackets/SendPackets.py", line 20, in __init__
+	    self.send()
+	  File "/root/Cnn_Identify_Model/SnedAndHandlePackets/SendPackets.py", line 30, in send
+	    sockets.sendall(packets[i])
+	TypeError: a bytes-like object is required, not 'Ether'
+    这个问题已经在代码中修复了。
+ 4.mao.txt   Result.txt  test23.csv  需要自己手动创建
+ 
+ 
